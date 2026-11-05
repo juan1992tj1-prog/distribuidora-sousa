@@ -7,6 +7,7 @@ import { Aviso } from "@/components/Aviso";
 import { auditar } from "@/lib/estoque";
 import { comAviso, ErroNegocio, tentar } from "@/lib/erros";
 import { exigir, type Perfil } from "@/lib/sessao";
+import { MODO_DEMO } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 const PERFIS: Perfil[] = ["dono", "gerente", "caixa", "estoquista"];
@@ -15,6 +16,7 @@ async function criar(formData: FormData) {
   "use server";
   const erro = await tentar(async () => {
     const s = await exigir("gerenciar_usuarios");
+    if (MODO_DEMO) throw new ErroNegocio("Na demonstração não é possível criar usuários.");
     const perfil = String(formData.get("perfil")) as Perfil;
     const senha = String(formData.get("senha") ?? "");
     if (!PERFIS.includes(perfil)) throw new ErroNegocio("Perfil inválido.");
@@ -37,6 +39,7 @@ async function alterar(formData: FormData) {
   "use server";
   const erro = await tentar(async () => {
     const s = await exigir("gerenciar_usuarios");
+    if (MODO_DEMO) throw new ErroNegocio("Na demonstração não é possível trocar senhas nem desativar usuários.");
     const id = Number(formData.get("id"));
     if (id === s.uid && formData.get("ativo") !== "on") throw new ErroNegocio("Você não pode desativar a si mesmo.");
     const valores: Partial<typeof usuarios.$inferInsert> = { ativo: formData.get("ativo") === "on" };

@@ -1,0 +1,26 @@
+name: Reiniciar demo online
+
+# Todo dia às 11h (Brasília) apaga o banco da demonstração pública e gera de novo os 30 dias fictícios.
+# Precisa do segredo DEMO_DATABASE_URL (Settings → Secrets and variables → Actions) apontando
+# para o banco EXCLUSIVO da demo. Sem o segredo, o job só avisa e termina.
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+jobs:
+  resetar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run demo:resetar
+        env:
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+          CONFIRMAR_RESET: apagar-tudo
+          TZ_LOJA: America/Sao_Paulo

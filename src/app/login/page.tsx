@@ -1,5 +1,6 @@
 import { Aviso } from "@/components/Aviso";
 import { Marca, Tampinha } from "@/components/Marca";
+import { ACESSOS_DEMO, MODO_DEMO } from "@/lib/demo";
 import { entrar } from "./actions";
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
@@ -31,6 +32,28 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <h2 className="mb-1 text-2xl">Entrar</h2>
           <p className="mb-6 text-tinta-suave">Use o login e a senha que o dono da loja criou para você.</p>
           <Aviso busca={busca} />
+          {MODO_DEMO && (
+            <div className="mb-6 rounded-xl border border-ambar-300 bg-ambar-100/60 p-4">
+              <p className="mb-3 text-sm text-tinta">
+                <b>Demonstração com dados fictícios.</b> Entre com um clique em qualquer perfil:
+              </p>
+              <div className="grid gap-2">
+                {ACESSOS_DEMO.map((a) => (
+                  <form key={a.login} action={entrar}>
+                    <input type="hidden" name="login" value={a.login} />
+                    <input type="hidden" name="senha" value={a.senha} />
+                    <button className="btn-neutro w-full justify-between px-3 py-2 text-left">
+                      <span>
+                        <span className="block">{a.perfil}</span>
+                        <span className="block text-xs font-normal text-tinta-suave">{a.descricao}</span>
+                      </span>
+                      <span className="text-xs font-normal text-tinta-suave">{a.login}</span>
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </div>
+          )}
           <form action={entrar} className="space-y-4">
             <div>
               <label htmlFor="login">Login</label>

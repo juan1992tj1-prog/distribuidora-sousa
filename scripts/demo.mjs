@@ -35,6 +35,7 @@ const env = {
   ADMIN_LOGIN: "admin",
   ADMIN_SENHA: "admin123",
   EXEMPLOS: "1",
+  MODO_DEMO: "1",
   NEXT_TELEMETRY_DISABLED: "1",
 };
 

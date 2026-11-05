@@ -23,7 +23,7 @@ import {
   registrarVenda,
   saldoFiado,
 } from "../src/lib/estoque";
-import { hojeIso, somarDias } from "../src/lib/formato";
+import { FUSO, hojeIso, somarDias } from "../src/lib/formato";
 import { atualizarAlertas, tratarAlerta } from "../src/lib/validade";
 
 const DIAS = 30;
@@ -287,7 +287,9 @@ async function main() {
     const vendas: (typeof linhas)[] = [];
     while (linhas.length) vendas.push(linhas.splice(0, entre(1, 3)));
 
-    const horaFim = ehHoje ? Math.min(21, agora.getHours() - 1) : 21;
+    // hora atual em Brasília (o GitHub Actions roda em UTC)
+    const horaAgora = Number(new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO, hour: "numeric", hour12: false }).format(agora));
+    const horaFim = ehHoje ? Math.min(21, horaAgora - 1) : 21;
     const idsDoDia: number[] = [];
     for (let i = 0; i < vendas.length; i++) {
       const hora = 9 + Math.floor((i / vendas.length) * Math.max(1, horaFim - 9));
