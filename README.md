@@ -1,10 +1,52 @@
 # Distribuidora Sousa — Sistema de Estoque (balcão)
 
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-C5F74F?style=flat-square&logo=drizzle&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Vitest](https://img.shields.io/badge/testes-Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+
 Sistema web para pequena distribuidora de bebidas: entrada de mercadorias com leitor de código de barras/QR,
-estoque por **lote e validade (FEFO)**, venda no balcão, alertas de vencimento, fiado e controle de acesso por perfil.
+estoque por **lote e validade (FEFO)**, venda no balcão, caixa com fechamento cego, alertas de vencimento,
+sugestão de compra, fiado e controle de acesso por perfil.
 
 Roda num **mini-PC dentro da loja** (Docker). Caixa e celulares acessam pelo navegador, na rede local.
 Backup diário criptografado, com cópia opcional na nuvem.
+
+![Painel inicial](docs/capturas/02-painel.png)
+
+## Telas
+
+| | |
+|---|---|
+| **Venda no balcão (PDV)**: bipa o código, `3*código` multiplica, confere idade para bebida alcoólica | **Fechamento de caixa**: o operador conta às cegas; o gerente vê esperado × contado |
+| ![PDV](docs/capturas/03-pdv.png) | ![Relatório de fechamento](docs/capturas/05-fechamento-caixa.png) |
+| **Sugestão de compra**: giro × estoque × mínimo, arredondado na caixa, por fornecedor | **Validade**: lotes por faixa (vencido, 15, 30, 60, 90 dias) e ação tomada |
+| ![Sugestão de compra](docs/capturas/06-sugestao-compra.png) | ![Validade](docs/capturas/07-validade.png) |
+| **Estoque por lote**: saldo de cada lote e kardex completo | **Caixa aberto**: sangria, suprimento e contagem por cédula |
+| ![Estoque por lote](docs/capturas/08-estoque-lotes.png) | ![Caixa](docs/capturas/04-caixa-aberto.png) |
+
+<p align="center">
+  <img src="docs/capturas/01-login.png" alt="Login" width="62%">
+  &nbsp;
+  <img src="docs/capturas/09-celular.png" alt="No celular" width="22%">
+</p>
+
+## Decisões técnicas
+
+- **O saldo nunca é editado direto.** Toda mudança passa por `movimentar()`, que grava o kardex e ajusta o saldo
+  na mesma transação. O banco recusa saldo negativo (`CHECK`) e as vendas travam as linhas de saldo (`FOR UPDATE`)
+  para duas vendas simultâneas não usarem o mesmo estoque.
+- **FEFO**: a venda escolhe sozinha o lote que vence primeiro; lote vencido nunca é vendido.
+- **Dinheiro em centavos e quantidade em unidades** (inteiros): sem erro de arredondamento. Caixas e fardos são
+  embalagens com fator de conversão, cada uma com seu código de barras.
+- **Conferência cega** na entrada de mercadoria e no fechamento de caixa: quem conta não vê o esperado, e o
+  sistema não avisa antes de gravar, para ninguém "chutar" até acertar.
+- **Regras de negócio testadas** com Vitest num PostgreSQL de verdade rodando em memória (PGlite), sem instalar nada.
+- **Demo com um comando**: o mesmo PGlite sobe o banco e um script gera 30 dias de movimento usando as próprias
+  regras do sistema, então os números sempre fecham.
 
 > Versão **gerencial**: ainda **não emite NF-e/NFC-e**. Enquanto isso, use o emissor que a loja já tem.
 > Os campos NCM/CEST já existem no cadastro para quando o módulo fiscal entrar.
