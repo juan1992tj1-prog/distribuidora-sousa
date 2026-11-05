@@ -15,6 +15,10 @@ sugestão de compra, fiado e controle de acesso por perfil.
 Roda num **mini-PC dentro da loja** (Docker). Caixa e celulares acessam pelo navegador, na rede local.
 Backup diário criptografado, com cópia opcional na nuvem.
 
+### ▶ [Abrir a demo online](https://distribuidora-sousa.vercel.app)
+
+Entre com um clique como dono, caixa, gerente ou estoquista. Todos os dados são fictícios e voltam ao normal todo dia.
+
 ![Painel inicial](docs/capturas/02-painel.png)
 
 ## Telas
@@ -201,6 +205,14 @@ docker compose up -d --build        # as migrações do banco rodam sozinhas ao 
 ```
 
 ---
+
+## Demo online (como funciona)
+
+A demonstração pública roda na **Vercel** com um PostgreSQL gratuito do **Neon** e a variável `MODO_DEMO=1`, que:
+mostra os acessos de teste no login, exibe a faixa "dados fictícios" e bloqueia criar usuários e trocar senhas.
+Todo dia às 11h (Brasília) o agendador da Vercel (`vercel.json`) chama `/api/demo/resetar`, que apaga o banco
+da demo e gera de novo os 30 dias fictícios (`src/lib/demo-reset.ts`). A rota só existe com `MODO_DEMO=1`, roda no
+máximo uma vez por dia e se recusa a apagar um banco que não tenha os usuários fictícios da demo.
 
 ## Desenvolvimento
 
