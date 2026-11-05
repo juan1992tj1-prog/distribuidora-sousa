@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { ErroNegocio } from "./erros";
+import { MODO_DEMO } from "./demo";
 
 export type Perfil = "dono" | "gerente" | "caixa" | "estoquista";
 export type Sessao = { uid: number; nome: string; perfil: Perfil };
@@ -10,8 +11,12 @@ export type Sessao = { uid: number; nome: string; perfil: Perfil };
 const COOKIE = "sessao";
 const DURACAO_HORAS = 12;
 
+// Só na demonstração pública: os logins da demo já são públicos, então uma chave fixa não abre nada a mais.
+// Numa loja de verdade SESSION_SECRET é obrigatória.
+const CHAVE_DEMO = "demonstracao-publica-dados-ficticios-sem-valor-0000";
+
 function chave() {
-  const s = process.env.SESSION_SECRET;
+  const s = process.env.SESSION_SECRET || (MODO_DEMO ? CHAVE_DEMO : undefined);
   if (!s || s.length < 32) throw new Error("Defina SESSION_SECRET (mínimo 32 caracteres) no .env");
   return new TextEncoder().encode(s);
 }
