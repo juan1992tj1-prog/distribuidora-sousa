@@ -18,7 +18,10 @@ npm install
 npm run demo
 ```
 Abra **http://localhost:3000** e entre com `admin` / `admin123`.
-O modo demo já vem com produtos e estoque de exemplo, incluindo um lote vencido e um vencendo.
+O modo demo já vem com **30 dias de movimento fictício**: 13 produtos, ~500 vendas, entradas de 4 fornecedores,
+um caixa por dia (alguns com sobra ou falta), fiado, perdas, um lote vencido e outros perto de vencer. Assim o painel,
+a curva ABC, a validade e a sugestão de compra já aparecem preenchidos. Outros logins (senha `demo123`):
+`maria` (caixa, com o caixa de hoje aberto), `carlos` (gerente) e `jose` (estoquista).
 Os dados ficam salvos em `.dados-demo/`. Para começar do zero: `npm run demo -- --zerar`.
 
 Para testar a importação de nota: em **Entrada → Começar conferência → Importar XML da NF-e**, escolha o arquivo
