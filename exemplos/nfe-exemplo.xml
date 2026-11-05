@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NF-e FICTÍCIA para teste do sistema (dados inventados, sem valor fiscal). -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe52261112345678000195550010000045671000045678" versao="4.00">
+      <ide><cUF>52</cUF><mod>55</mod><serie>1</serie><nNF>4567</nNF><dhEmi>2026-11-05T08:30:00-03:00</dhEmi></ide>
+      <emit><CNPJ>12345678000195</CNPJ><xNome>Bebidas Exemplo Atacado LTDA</xNome></emit>
+      <det nItem="1">
+        <prod>
+          <cProd>CERV-350-CX12</cProd><cEAN>17890000000014</cEAN><xProd>CERVEJA PILSEN LATA 350ML CX C/12</xProd>
+          <uCom>CX</uCom><qCom>5.0000</qCom><vUnCom>38.4000000000</vUnCom><vProd>192.00</vProd>
+          <cEANTrib>7890000000017</cEANTrib><uTrib>UN</uTrib><qTrib>60.0000</qTrib>
+          <rastro><nLote>L2611A</nLote><qLote>60.000</qLote><dFab>2026-10-20</dFab><dVal>2027-03-15</dVal></rastro>
+        </prod>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>REFRI-2L-FD6</cProd><cEAN>SEM GTIN</cEAN><xProd>REFRIG COLA 2L FARDO C/6</xProd>
+          <uCom>FD</uCom><qCom>2.0000</qCom><vUnCom>45.0000000000</vUnCom><vProd>90.00</vProd>
+          <cEANTrib>7890000000024</cEANTrib><uTrib>UN</uTrib><qTrib>12.0000</qTrib>
+          <rastro><nLote>R1126</nLote><qLote>12.000</qLote><dFab>2026-10-01</dFab><dVal>2027-01-19</dVal></rastro>
+        </prod>
+      </det>
+      <det nItem="3">
+        <prod>
+          <cProd>ENERG-250</cProd><cEAN>7890000000048</cEAN><xProd>ENERGETICO TROPICAL LATA 250ML</xProd>
+          <uCom>UN</uCom><qCom>24.0000</qCom><vUnCom>4.5000000000</vUnCom><vProd>108.00</vProd>
+          <cEANTrib>7890000000048</cEANTrib><uTrib>UN</uTrib><qTrib>24.0000</qTrib>
+        </prod>
+      </det>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00"><infProt><chNFe>52261112345678000195550010000045671000045678</chNFe><cStat>100</cStat></infProt></protNFe>
+</nfeProc>

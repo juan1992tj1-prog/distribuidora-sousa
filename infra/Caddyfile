@@ -1,0 +1,9 @@
+# Caddy gera um certificado próprio (CA interna) para a rede da loja.
+# Instale o certificado raiz nos aparelhos uma vez (veja o README) para o navegador confiar.
+{$ENDERECO_LOJA}, localhost {
+	tls internal
+	encode gzip
+	reverse_proxy app:3000
+}
+
+# Acesso por http é redirecionado para https automaticamente.

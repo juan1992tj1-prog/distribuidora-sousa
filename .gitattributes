@@ -1,0 +1,5 @@
+# Finais de linha sempre LF (scripts .sh rodam dentro do Docker/Linux)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.svg text

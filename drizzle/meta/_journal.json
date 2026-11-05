@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793885443057,
+      "tag": "0000_inicial",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793889371329,
+      "tag": "0001_importacao_nfe",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793913019833,
+      "tag": "0002_caixa",
+      "breakpoints": true
+    }
+  ]
+}
