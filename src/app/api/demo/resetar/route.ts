@@ -10,7 +10,9 @@ export const maxDuration = 300;
 
 export async function GET() {
   if (!MODO_DEMO) return NextResponse.json({ erro: "Não disponível." }, { status: 404 });
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 3 });
+  // conexão direta (sem pooler): a trava do reset (advisory lock) precisa da mesma sessão do começo ao fim
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+  const pool = new Pool({ connectionString: url, max: 3 });
   try {
     const r = await resetarDemo(pool, { somenteUmaVezPorDia: true });
     return NextResponse.json(r);
