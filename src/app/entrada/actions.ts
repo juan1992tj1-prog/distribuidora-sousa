@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { entradaItens, entradas } from "@/db/schema";
 import { adicionarItemEntrada, buscarPorCodigo } from "@/lib/estoque";
-import { finalizarEntradaConferida, importarNfe, sugestaoLoteDaNota, vincularItemNota } from "@/lib/nfe";
+import { finalizarEntradaConferida, importarNfe, importarNotaLidaPorIa, sugestaoLoteDaNota, vincularItemNota } from "@/lib/nfe";
+import { extrairNota, MODELO_PADRAO, type Documento } from "@/lib/ia-nota";
 import { comAviso, ErroNegocio, resultado, tentar } from "@/lib/erros";
 import { lerCodigo, variacoesGtin } from "@/lib/gs1";
 import { exigir, pode } from "@/lib/sessao";
@@ -49,6 +50,41 @@ export async function importarXml(formData: FormData) {
     const r = await importarNfe(db, entradaId, await arquivo.text(), s.uid);
     const faltam = r.itens - r.vinculados;
     msg = `NF-e ${r.numero} importada: ${r.itens} item(ns)` + (faltam ? `, ${faltam} precisa(m) ser vinculado(s) ao cadastro.` : ", todos reconhecidos.");
+  });
+  redirect(comAviso(`/entrada/${entradaId}`, erro, msg));
+}
+
+const TIPOS_IMAGEM = ["image/jpeg", "image/png", "image/webp"] as const;
+
+/** Nota sem XML: PDF ou foto do DANFE, ou pedido colado como texto, lidos por IA. */
+export async function importarComIa(formData: FormData) {
+  const entradaId = Number(formData.get("entradaId"));
+  let msg = "";
+  const erro = await tentar(async () => {
+    const s = await exigir("ver_custo");
+    const arquivo = formData.get("arquivo");
+    const texto = String(formData.get("texto") ?? "").trim();
+    let doc: Documento;
+    if (arquivo instanceof File && arquivo.size > 0) {
+      if (arquivo.size > 8_000_000) throw new ErroNegocio("Arquivo grande demais (máximo 8 MB).");
+      const base64 = Buffer.from(await arquivo.arrayBuffer()).toString("base64");
+      if (arquivo.type === "application/pdf") doc = { tipo: "pdf", base64 };
+      else if ((TIPOS_IMAGEM as readonly string[]).includes(arquivo.type))
+        doc = { tipo: "imagem", base64, mime: arquivo.type as (typeof TIPOS_IMAGEM)[number] };
+      else throw new ErroNegocio("Envie um PDF ou uma foto (JPG, PNG ou WEBP) da nota.");
+    } else if (texto) {
+      doc = { tipo: "texto", texto: texto.slice(0, 30_000) };
+    } else {
+      throw new ErroNegocio("Envie o PDF/foto da nota ou cole o texto do pedido.");
+    }
+    const nota = await extrairNota(doc);
+    const r = await importarNotaLidaPorIa(db, entradaId, nota, s.uid, MODELO_PADRAO);
+    const faltam = r.itens - r.vinculados;
+    msg =
+      `Nota lida pela IA: ${r.itens} item(ns)` +
+      (faltam ? `, ${faltam} precisa(m) ser vinculado(s) ao cadastro.` : ", todos reconhecidos.") +
+      " Confira a leitura: divergências aparecem na conferência." +
+      (r.observacoes.length ? ` Atenção: ${r.observacoes.slice(0, 3).join(" ")}` : "");
   });
   redirect(comAviso(`/entrada/${entradaId}`, erro, msg));
 }
