@@ -28,6 +28,8 @@ services:
       ADMIN_SENHA: ${ADMIN_SENHA:-}
       WEBHOOK_ALERTAS: ${WEBHOOK_ALERTAS:-}
       FAIXAS_VALIDADE: ${FAIXAS_VALIDADE:-15,30,60,90}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      IA_MODELO: ${IA_MODELO:-}
 
   # HTTPS na rede local (necessário para a câmera do celular funcionar)
   caddy:
