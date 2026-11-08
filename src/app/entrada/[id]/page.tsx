@@ -7,7 +7,7 @@ import { compararComNota } from "@/lib/nfe";
 import { Aviso } from "@/components/Aviso";
 import { dataBr, reais } from "@/lib/formato";
 import { exigir, pode } from "@/lib/sessao";
-import { finalizar, importarXml, removerItem, vincular } from "../actions";
+import { finalizar, importarComIa, importarXml, removerItem, vincular } from "../actions";
 import { Conferencia } from "./Conferencia";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +62,28 @@ export default async function EntradaDetalhe({
             <input type="file" name="xml" accept=".xml,text/xml,application/xml" required className="campo" />
           </div>
           <button className="btn-primario">Importar nota</button>
+        </form>
+      )}
+
+      {aberta && verCusto && !entrada.chaveNfe && (
+        <form action={importarComIa} className="card space-y-2">
+          <input type="hidden" name="entradaId" value={entrada.id} />
+          <h2 className="mb-1">Sem XML? Ler a nota com IA</h2>
+          <p className="text-sm text-tinta-suave">
+            Envie o PDF ou uma foto do DANFE, ou cole o pedido que o fornecedor mandou no WhatsApp. A IA monta a lista de
+            itens e a conferência cega mostra qualquer diferença — nada entra no estoque sem ser bipado.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label>PDF ou foto da nota</label>
+              <input type="file" name="arquivo" accept="application/pdf,image/jpeg,image/png,image/webp" className="campo" />
+            </div>
+            <div>
+              <label>…ou cole o texto do pedido</label>
+              <textarea name="texto" rows={3} className="campo" placeholder={"Ex.: 5 cx Cerveja Lata 350ml R$ 192,00\n12 un Refrigerante Cola 2L"} />
+            </div>
+          </div>
+          <button className="btn-primario">Ler com IA</button>
         </form>
       )}
 
