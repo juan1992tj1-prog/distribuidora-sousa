@@ -7,10 +7,12 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Vitest](https://img.shields.io/badge/testes-Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![Claude API](https://img.shields.io/badge/IA-Claude_API-D97757?style=flat-square&logo=anthropic&logoColor=white)
 
 Sistema web para pequena distribuidora de bebidas: entrada de mercadorias com leitor de código de barras/QR,
 estoque por **lote e validade (FEFO)**, venda no balcão, caixa com fechamento cego, alertas de vencimento,
-sugestão de compra, fiado e controle de acesso por perfil.
+sugestão de compra, fiado e controle de acesso por perfil. Quando o fornecedor não manda o XML da nota,
+**a IA lê o PDF ou a foto do DANFE** e monta a lista para a conferência.
 
 Roda num **mini-PC dentro da loja** (Docker). Caixa e celulares acessam pelo navegador, na rede local.
 Backup diário criptografado, com cópia opcional na nuvem.
@@ -49,6 +51,11 @@ Entre com um clique como dono, caixa, gerente ou estoquista. Todos os dados são
 - **Conferência cega** na entrada de mercadoria e no fechamento de caixa: quem conta não vê o esperado, e o
   sistema não avisa antes de gravar, para ninguém "chutar" até acertar.
 - **Regras de negócio testadas** com Vitest num PostgreSQL de verdade rodando em memória (PGlite), sem instalar nada.
+- **IA com os pés no chão** (leitura de nota sem XML): o modelo responde por *tool use* com JSON Schema, então
+  devolve dados e não texto livre; a resposta passa por validação (zod, dígito do EAN e da chave de acesso, datas
+  reais) e o que não confere é descartado e mostrado ao gerente, nunca "corrigido" no chute. Os itens entram na
+  **mesma conferência cega** da NF-e em XML: um erro da IA aparece como divergência antes de qualquer coisa entrar
+  no estoque. A chamada ao modelo é injetável, então os testes rodam sem internet e sem custo.
 - **Demo com um comando**: o mesmo PGlite sobe o banco e um script gera 30 dias de movimento usando as próprias
   regras do sistema, então os números sempre fecham.
 
@@ -86,6 +93,7 @@ Códigos para digitar (ou bipar) no campo do leitor: `7890000000017` (lata), `17
 | **Acesso** | Login, 4 perfis (dono, gerente, caixa, estoquista), permissões em `src/lib/sessao.ts`, log de auditoria |
 | **Produtos** | Embalagens com fator (UN, pack, fardo, caixa), cada uma com seu código de barras e preço; validação do dígito do EAN; marcação de perecível e alcoólico |
 | **NF-e do fornecedor** | Importa o XML da nota; reconhece os itens pelo código de barras (comercial ou tributável) ou por vínculo aprendido; **conferência cega** (o estoquista não vê as quantidades); comparação nota × contado com faltas e sobras; finalizar com divergência exige confirmação do gerente e fica na auditoria; custo e lote/validade vêm da nota |
+| **Nota sem XML (IA)** | PDF ou foto do DANFE (inclusive pela câmera do celular) ou pedido colado do WhatsApp; a IA extrai fornecedor, chave, itens, quantidades, valores, lote e validade; validação de tudo o que veio; itens sem código são lembrados pela descrição para as próximas notas; leitura registrada na auditoria com o modelo usado |
 | **Entrada** | Conferência bipando cada volume; lê **EAN, DUN-14, GS1-128, DataMatrix e QR GS1** (lote e validade vêm sozinhos); validade rápida DDMMAA; custo médio ponderado |
 | **Estoque** | Saldo por produto + lote; kardex completo; perdas, vencidos, consumo interno, devolução; inventário com ajuste e motivo |
 | **Caixa** | Abertura com fundo de troco (sem caixa aberto não vende); sangria e suprimento; **fechamento cego** com contagem por cédula/moeda; relatório por forma de pagamento com esperado × contado (sobra/falta); gerente confere e fecha caixa de outro operador; cancelamento de venda de caixa já fechado vira estorno no caixa atual |
@@ -224,6 +232,11 @@ npm run typecheck   # checagem de tipos
 ```
 
 **Mudou o banco?** Edite `src/db/schema.ts`, rode `npm run db:generate` (cria a migração em `drizzle/`) e faça commit.
+
+**Leitura de nota com IA**: coloque `ANTHROPIC_API_KEY` no `.env` (chave criada em console.anthropic.com).
+`IA_MODELO` troca o modelo (padrão `claude-haiku-5-5`). Sem chave, o resto do sistema funciona normalmente e o
+botão "Ler com IA" avisa que não está configurado. O código fica em `src/lib/ia-nota.ts` e os testes em
+`tests/ia-nota.test.ts` (com respostas simuladas, sem chamar a API).
 
 ## Próximos passos sugeridos
 1. **Pix com QR dinâmico** e baixa automática (API do banco/PSP).
