@@ -24,6 +24,7 @@ import {
 import { ErroNegocio } from "./erros";
 import { auditar, buscarPorCodigo, finalizarEntrada } from "./estoque";
 import { gtinValido, variacoesGtin } from "./gs1";
+import type { NotaExtraida } from "./ia-nota";
 
 // ---------------------------------------------------------------- leitura do XML
 
@@ -129,6 +130,10 @@ async function fornecedorDaNota(db: DB, emitente: Nfe["emitente"]): Promise<numb
   if (emitente.cnpj) {
     const [f] = await db.select({ id: fornecedores.id }).from(fornecedores).where(eq(fornecedores.cnpj, emitente.cnpj));
     if (f) return f.id;
+  } else {
+    // nota lida por IA sem CNPJ: reaproveita fornecedor com o mesmo nome, em vez de duplicar
+    const [f] = await db.select({ id: fornecedores.id }).from(fornecedores).where(sql`lower(${fornecedores.nome}) = lower(${emitente.nome})`);
+    if (f) return f.id;
   }
   const [novo] = await db
     .insert(fornecedores)
@@ -160,17 +165,69 @@ async function identificarItem(db: DB, fornecedorId: number, item: ItemNfe) {
 
 export async function importarNfe(db: DB, entradaId: number, xml: string, usuarioId: number) {
   const nfe = lerNfe(xml);
+  const r = await gravarItensDaNota(db, entradaId, nfe);
+  await auditar(db, usuarioId, "importar_nfe", "entrada", entradaId, { chave: nfe.chave, itens: r.itens });
+  return { ...r, numero: nfe.numero };
+}
+
+/**
+ * Importa os itens lidos por IA (PDF/foto do DANFE ou pedido em texto) no mesmo fluxo da
+ * NF-e: vínculo com o cadastro + conferência cega. Itens sem código do fornecedor são
+ * lembrados pela descrição, então o vínculo manual também vale para as próximas notas.
+ */
+export async function importarNotaLidaPorIa(db: DB, entradaId: number, nota: NotaExtraida, usuarioId: number, modelo: string) {
+  const itens: ItemNfe[] = nota.itens.map((it, i) => ({
+    numeroItem: i + 1,
+    codigo: it.codigo ?? codigoPorDescricao(it.descricao),
+    ean: it.ean,
+    eanTrib: null,
+    descricao: it.descricao,
+    unidade: it.unidade,
+    quantidade: it.quantidade,
+    unidadeTrib: it.unidade,
+    quantidadeTrib: 0,
+    valorTotal: it.valorTotal,
+    lote: it.lote,
+    validade: it.validade,
+  }));
+  const r = await gravarItensDaNota(db, entradaId, { chave: nota.chave, numero: nota.numero ?? "", emitente: nota.emitente, itens });
+  await auditar(db, usuarioId, "importar_nota_ia", "entrada", entradaId, {
+    modelo,
+    chave: nota.chave,
+    itens: r.itens,
+    observacoes: nota.observacoes,
+  });
+  return { ...r, numero: nota.numero, observacoes: nota.observacoes };
+}
+
+/** Chave estável para lembrar um item sem código: "DESC:" + descrição sem acento/pontuação. */
+export function codigoPorDescricao(descricao: string) {
+  const norm = descricao
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+  return `DESC:${norm}`.slice(0, 60);
+}
+
+type DadosNota = { chave: string | null; numero: string; emitente: Nfe["emitente"]; itens: ItemNfe[] };
+
+/** Parte comum a XML e IA: impede nota duplicada, identifica fornecedor e itens e grava o "esperado". */
+async function gravarItensDaNota(db: DB, entradaId: number, nfe: DadosNota) {
   const [ent] = await db.select().from(entradas).where(eq(entradas.id, entradaId));
   if (!ent) throw new ErroNegocio("Entrada não encontrada.");
   if (ent.status !== "aberta") throw new ErroNegocio("Esta entrada já foi finalizada.");
-  if (ent.chaveNfe && ent.chaveNfe !== nfe.chave) throw new ErroNegocio("Esta entrada já tem outra nota importada.");
-  const [outra] = await db
-    .select({ id: entradas.id })
-    .from(entradas)
-    .where(and(eq(entradas.chaveNfe, nfe.chave), sql`${entradas.id} <> ${entradaId}`));
-  if (outra) throw new ErroNegocio(`Esta NF-e já foi importada na entrada nº ${outra.id}.`);
+  if (ent.chaveNfe && nfe.chave && ent.chaveNfe !== nfe.chave) throw new ErroNegocio("Esta entrada já tem outra nota importada.");
+  if (nfe.chave) {
+    const [outra] = await db
+      .select({ id: entradas.id })
+      .from(entradas)
+      .where(and(eq(entradas.chaveNfe, nfe.chave), sql`${entradas.id} <> ${entradaId}`));
+    if (outra) throw new ErroNegocio(`Esta NF-e já foi importada na entrada nº ${outra.id}.`);
+  }
 
-  const fornecedorId = await fornecedorDaNota(db, nfe.emitente);
+  const fornecedorId = ent.fornecedorId && !nfe.emitente.cnpj ? ent.fornecedorId : await fornecedorDaNota(db, nfe.emitente);
   const linhas: (typeof entradaNotaItens.$inferInsert)[] = [];
   for (const item of nfe.itens) {
     const ident = await identificarItem(db, fornecedorId, item);
@@ -194,11 +251,10 @@ export async function importarNfe(db: DB, entradaId: number, xml: string, usuari
     await tx.insert(entradaNotaItens).values(linhas);
     await tx
       .update(entradas)
-      .set({ chaveNfe: nfe.chave, numeroNota: nfe.numero, fornecedorId })
+      .set({ chaveNfe: nfe.chave ?? ent.chaveNfe, numeroNota: nfe.numero.slice(0, 20) || ent.numeroNota, fornecedorId })
       .where(eq(entradas.id, entradaId));
   });
-  await auditar(db, usuarioId, "importar_nfe", "entrada", entradaId, { chave: nfe.chave, itens: linhas.length });
-  return { itens: linhas.length, vinculados: linhas.filter((l) => l.embalagemId).length, numero: nfe.numero };
+  return { itens: linhas.length, vinculados: linhas.filter((l) => l.embalagemId).length };
 }
 
 /** Liga um item da nota a uma embalagem nossa e lembra disso para as próximas notas do fornecedor. */
